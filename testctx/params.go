@@ -11,7 +11,7 @@ func (p Params) GetInt(idx int) int {
 	if idx < 0 {
 		panic(errors.New("index can't be negative"))
 	}
-	if len(p) >= idx {
+	if idx >= len(p) {
 		panic(fmt.Errorf("step does not have param %d", idx))
 	}
 

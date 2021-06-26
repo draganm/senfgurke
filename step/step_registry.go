@@ -57,9 +57,12 @@ func (r *Registry) Execute(text string, w testctx.World) error {
 var errNotMatching = errors.New("not matching")
 
 func (s step) execute(text string, w testctx.World) error {
-	if text == s.pattern {
-		tc := testctx.New(nil, w)
-		return s.impl(tc)
+
+	params, err := Match(s.pattern, text)
+	if err != nil {
+		return err
 	}
-	return errNotMatching
+
+	tc := testctx.New(params, w)
+	return s.impl(tc)
 }

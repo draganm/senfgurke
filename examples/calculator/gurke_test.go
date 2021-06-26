@@ -15,14 +15,14 @@ func TestFeatures(t *testing.T) {
 
 var steps = step.NewRegistry()
 
-var _ = steps.When("I add 2 and 3", func(w testctx.Context) error {
-	w.World.Put("result", 2+3)
+var _ = steps.When("I add {int} and {int}", func(w testctx.Context) error {
+	w.World.Put("result", w.Params.GetInt(0)+w.Params.GetInt(1))
 	return nil
 })
 
-var _ = steps.Then("the result should be 5", func(w testctx.Context) error {
+var _ = steps.Then("the result should be {int}", func(w testctx.Context) error {
 	result := w.World.GetInt("result")
-	if result != 5 {
+	if result != w.Params.GetInt(0) {
 		return fmt.Errorf("value %d is not equal to 5", result)
 	}
 	return nil
