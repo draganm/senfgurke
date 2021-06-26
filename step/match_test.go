@@ -57,6 +57,27 @@ func TestMatcher(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			pattern: "foo {string}",
+			cases: []testCase{
+				{
+					text:        `foo "1"`,
+					shouldMatch: true,
+					params:      []interface{}{"1"},
+				},
+				{
+					text:        `foo "bar"`,
+					shouldMatch: true,
+					params:      []interface{}{"bar"},
+				},
+				{
+					text:        `foo "b\"ar"`,
+					shouldMatch: true,
+					params:      []interface{}{"b\"ar"},
+				},
+			},
+		},
 	}
 
 	for _, c := range cases {

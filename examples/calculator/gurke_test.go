@@ -22,8 +22,23 @@ var _ = steps.When("I add {int} and {int}", func(w testctx.Context) error {
 
 var _ = steps.Then("the result should be {int}", func(w testctx.Context) error {
 	result := w.World.GetInt("result")
-	if result != w.Params.GetInt(0) {
-		return fmt.Errorf("value %d is not equal to 5", result)
+	expected := w.Params.GetInt(0)
+	if result != expected {
+		return fmt.Errorf("value %d is not equal to %d", result, expected)
+	}
+	return nil
+})
+
+var _ = steps.When("I convert number {int} to string", func(w testctx.Context) error {
+	w.World.Put("result", fmt.Sprintf("%d", w.Params.GetInt(0)))
+	return nil
+})
+
+var _ = steps.Then("the string should be {string}", func(w testctx.Context) error {
+	result := w.World.GetString("result")
+	expected := w.Params.GetString(0)
+	if result != expected {
+		return fmt.Errorf("value %q is not equal to %q", result, expected)
 	}
 	return nil
 })

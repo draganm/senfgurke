@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var paramPattern = regexp.MustCompile(`{(int)}`)
+var paramPattern = regexp.MustCompile(`{((?:int)|(?:string))}`)
 
 func Match(pattern, txt string) ([]interface{}, error) {
 	all := paramPattern.FindAllStringIndex(pattern, -1)
@@ -31,6 +31,8 @@ func Match(pattern, txt string) ([]interface{}, error) {
 		switch t {
 		case "int":
 			sb.WriteString(`(-?\d+)`)
+		case "string":
+			sb.WriteString(`"((?:[^"]|(?:\\"))*)"`)
 		default:
 			return nil, fmt.Errorf("unknown parameter type %q", t)
 		}
@@ -73,6 +75,8 @@ func Match(pattern, txt string) ([]interface{}, error) {
 				return nil, fmt.Errorf("while parsing int %q: %s", st, err.Error())
 			}
 			params[i] = int(v)
+		case "string":
+			params[i] = strings.ReplaceAll(st, "\\\"", "\"")
 		default:
 			return nil, fmt.Errorf("unknown parameter type %q", t)
 		}
