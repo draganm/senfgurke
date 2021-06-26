@@ -5,9 +5,9 @@ type Context struct {
 	World
 }
 
-func New(params []interface{}) Context {
+func New(params []interface{}, w World) Context {
 	return Context{
 		Params: Params(params),
-		World:  World{},
+		World:  w,
 	}
 }

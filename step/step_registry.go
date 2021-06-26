@@ -36,7 +36,8 @@ func (r *Registry) Then(pattern string, impl func(w testctx.Context) error) erro
 	return nil
 }
 
-func (r *Registry) Execute(text string, w testctx.Context) error {
+func (r *Registry) Execute(text string, w testctx.World) error {
+
 	for _, s := range r.steps {
 		err := s.execute(text, w)
 		if err == errNotMatching {
@@ -55,9 +56,10 @@ func (r *Registry) Execute(text string, w testctx.Context) error {
 
 var errNotMatching = errors.New("not matching")
 
-func (s step) execute(text string, w testctx.Context) error {
+func (s step) execute(text string, w testctx.World) error {
 	if text == s.pattern {
-		return s.impl(w)
+		tc := testctx.New(nil, w)
+		return s.impl(tc)
 	}
 	return errNotMatching
 }
