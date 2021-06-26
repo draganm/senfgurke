@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/draganm/senfgurke/step"
+	"github.com/draganm/senfgurke/testctx"
 	"github.com/draganm/senfgurke/testrunner"
-	"github.com/draganm/senfgurke/world"
 )
 
 func TestFeatures(t *testing.T) {
@@ -15,13 +15,13 @@ func TestFeatures(t *testing.T) {
 
 var steps = step.NewRegistry()
 
-var _ = steps.When("I add 2 and 3", func(w world.World) error {
-	w["result"] = 2 + 3
+var _ = steps.When("I add 2 and 3", func(w testctx.Context) error {
+	w.World.Put("result", 2+3)
 	return nil
 })
 
-var _ = steps.Then("the result should be 5", func(w world.World) error {
-	result := w.GetInt("result")
+var _ = steps.Then("the result should be 5", func(w testctx.Context) error {
+	result := w.World.GetInt("result")
 	if result != 5 {
 		return fmt.Errorf("value %d is not equal to 5", result)
 	}

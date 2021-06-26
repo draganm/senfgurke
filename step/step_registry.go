@@ -4,14 +4,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/draganm/senfgurke/world"
+	"github.com/draganm/senfgurke/testctx"
 )
 
 // type Step func()
 
 type step struct {
 	pattern string
-	impl    func(w world.World) error
+	impl    func(w testctx.Context) error
 }
 type Registry struct {
 	steps []step
@@ -21,22 +21,22 @@ func NewRegistry() *Registry {
 	return &Registry{}
 }
 
-func (r *Registry) Given(pattern string, impl func(w world.World) error) error {
+func (r *Registry) Given(pattern string, impl func(w testctx.Context) error) error {
 	r.steps = append(r.steps, step{pattern: pattern, impl: impl})
 	return nil
 }
 
-func (r *Registry) When(pattern string, impl func(w world.World) error) error {
+func (r *Registry) When(pattern string, impl func(w testctx.Context) error) error {
 	r.steps = append(r.steps, step{pattern: pattern, impl: impl})
 	return nil
 }
 
-func (r *Registry) Then(pattern string, impl func(w world.World) error) error {
+func (r *Registry) Then(pattern string, impl func(w testctx.Context) error) error {
 	r.steps = append(r.steps, step{pattern: pattern, impl: impl})
 	return nil
 }
 
-func (r *Registry) Execute(text string, w world.World) error {
+func (r *Registry) Execute(text string, w testctx.Context) error {
 	for _, s := range r.steps {
 		err := s.execute(text, w)
 		if err == errNotMatching {
@@ -55,7 +55,7 @@ func (r *Registry) Execute(text string, w world.World) error {
 
 var errNotMatching = errors.New("not matching")
 
-func (s step) execute(text string, w world.World) error {
+func (s step) execute(text string, w testctx.Context) error {
 	if text == s.pattern {
 		return s.impl(w)
 	}

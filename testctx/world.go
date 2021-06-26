@@ -1,4 +1,4 @@
-package world
+package testctx
 
 import "fmt"
 
@@ -16,4 +16,8 @@ func (w World) GetInt(name string) int {
 	}
 
 	return iv
+}
+
+func (w World) Put(name string, value interface{}) {
+	w[name] = value
 }
