@@ -7,10 +7,8 @@ import (
 	"github.com/draganm/senfgurke/testctx"
 )
 
-// type Step func()
-
 type step struct {
-	pattern string
+	matcher *stepMatcher
 	impl    func(w testctx.Context) error
 }
 type Registry struct {
@@ -21,19 +19,26 @@ func NewRegistry() *Registry {
 	return &Registry{}
 }
 
-func (r *Registry) Given(pattern string, impl func(w testctx.Context) error) error {
-	r.steps = append(r.steps, step{pattern: pattern, impl: impl})
+func (r *Registry) addStep(pattern string, impl func(w testctx.Context) error) error {
+	matcher, err := newStepMatcher(pattern)
+	if err != nil {
+		return err
+	}
+	r.steps = append(r.steps, step{matcher: matcher, impl: impl})
 	return nil
+
+}
+
+func (r *Registry) Given(pattern string, impl func(w testctx.Context) error) error {
+	return r.addStep(pattern, impl)
 }
 
 func (r *Registry) When(pattern string, impl func(w testctx.Context) error) error {
-	r.steps = append(r.steps, step{pattern: pattern, impl: impl})
-	return nil
+	return r.addStep(pattern, impl)
 }
 
 func (r *Registry) Then(pattern string, impl func(w testctx.Context) error) error {
-	r.steps = append(r.steps, step{pattern: pattern, impl: impl})
-	return nil
+	return r.addStep(pattern, impl)
 }
 
 func (r *Registry) Execute(text string, w testctx.World) error {
@@ -58,7 +63,7 @@ var errNotMatching = errors.New("not matching")
 
 func (s step) execute(text string, w testctx.World) error {
 
-	params, err := Match(s.pattern, text)
+	params, err := s.matcher.match(text)
 	if err != nil {
 		return err
 	}
