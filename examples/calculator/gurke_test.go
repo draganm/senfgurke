@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/draganm/senfgurke/step"
-	"github.com/draganm/senfgurke/testctx"
 	"github.com/draganm/senfgurke/testrunner"
+	"github.com/draganm/senfgurke/world"
 )
 
 func TestFeatures(t *testing.T) {
@@ -15,28 +15,26 @@ func TestFeatures(t *testing.T) {
 
 var steps = step.NewRegistry()
 
-var _ = steps.When("I add {int} and {int}", func(w testctx.Context) error {
-	w.World.Put("result", w.Params.GetInt(0)+w.Params.GetInt(1))
+var _ = steps.When("I add {int} and {int}", func(w world.World, a, b int) error {
+	w.Put("result", a+b)
 	return nil
 })
 
-var _ = steps.Then("the result should be {int}", func(w testctx.Context) error {
-	result := w.World.GetInt("result")
-	expected := w.Params.GetInt(0)
+var _ = steps.Then("the result should be {int}", func(w world.World, expected int) error {
+	result := w.GetInt("result")
 	if result != expected {
 		return fmt.Errorf("value %d is not equal to %d", result, expected)
 	}
 	return nil
 })
 
-var _ = steps.When("I convert number {int} to string", func(w testctx.Context) error {
-	w.World.Put("result", fmt.Sprintf("%d", w.Params.GetInt(0)))
+var _ = steps.When("I convert number {int} to string", func(w world.World, a int) error {
+	w.Put("result", fmt.Sprintf("%d", a))
 	return nil
 })
 
-var _ = steps.Then("the string should be {string}", func(w testctx.Context) error {
-	result := w.World.GetString("result")
-	expected := w.Params.GetString(0)
+var _ = steps.Then("the string should be {string}", func(w world.World, expected string) error {
+	result := w.GetString("result")
 	if result != expected {
 		return fmt.Errorf("value %q is not equal to %q", result, expected)
 	}

@@ -8,7 +8,7 @@ import (
 
 	"github.com/cucumber/gherkin-go"
 	"github.com/draganm/senfgurke/step"
-	"github.com/draganm/senfgurke/testctx"
+	"github.com/draganm/senfgurke/world"
 	"github.com/stretchr/testify/require"
 )
 
@@ -41,7 +41,7 @@ func RunScenarios(t *testing.T, steps *step.Registry) {
 			for _, p := range doc.Pickles() {
 				p := p
 				t.Run(fmt.Sprintf("Scenario: %s", p.Name), func(t *testing.T) {
-					w := testctx.World{}
+					w := world.World{}
 					for _, s := range p.Steps {
 						err = steps.Execute(s.Text, w)
 						require.NoError(t, err)
