@@ -12,8 +12,11 @@ type step struct {
 	matcher *stepMatcher
 	impl    interface{}
 }
+
 type Registry struct {
-	steps []step
+	beforeScenarios []func(w world.World, featureName, scenarioName string, tags []string) error
+	afterScenarios  []func(w world.World, featureName, scenarioName string, tags []string, err error) error
+	steps           []step
 }
 
 func NewRegistry() *Registry {
@@ -22,6 +25,35 @@ func NewRegistry() *Registry {
 
 var errorInterface = reflect.TypeOf((*error)(nil)).Elem()
 
+func (r *Registry) BeforeScenario(fn func(w world.World, featureName, scenarioName string, tags []string) error) error {
+	r.beforeScenarios = append(r.beforeScenarios, fn)
+	return nil
+}
+
+func (r *Registry) AfterScenario(fn func(w world.World, featureName, scenarioName string, tags []string, err error) error) error {
+	r.afterScenarios = append(r.afterScenarios, fn)
+	return nil
+}
+
+func (r *Registry) ExecuteBeforeScenarios(w world.World, featureName, scenarioName string, tags []string) error {
+	for _, bs := range r.beforeScenarios {
+		err := bs(w, featureName, scenarioName, tags)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *Registry) ExecuteAfterScenarios(w world.World, featureName, scenarioName string, tags []string, err error) error {
+	for _, bs := range r.afterScenarios {
+		err := bs(w, featureName, scenarioName, tags, err)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 func (r *Registry) addStep(pattern string, impl interface{}) error {
 	matcher, err := newStepMatcher(pattern)
 	if err != nil {
@@ -86,7 +118,7 @@ func (r *Registry) Then(pattern string, impl interface{}) error {
 	return r.addStep(pattern, impl)
 }
 
-func (r *Registry) Execute(text string, w world.World) error {
+func (r *Registry) ExecuteStep(text string, w world.World) error {
 
 	for _, s := range r.steps {
 		err := s.execute(text, w)

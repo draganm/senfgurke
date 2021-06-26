@@ -40,3 +40,13 @@ var _ = steps.Then("the string should be {string}", func(w world.World, expected
 	}
 	return nil
 })
+
+var _ = steps.BeforeScenario(func(w world.World, featureName, scenarioName string, tags []string) error {
+	fmt.Println("running", featureName, "->", scenarioName)
+	return nil
+})
+
+var _ = steps.AfterScenario(func(w world.World, featureName, scenarioName string, tags []string, err error) error {
+	fmt.Println("done", featureName, "->", scenarioName, err)
+	return nil
+})

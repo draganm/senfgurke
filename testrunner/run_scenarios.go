@@ -42,8 +42,30 @@ func RunScenarios(t *testing.T, steps *step.Registry) {
 				p := p
 				t.Run(fmt.Sprintf("Scenario: %s", p.Name), func(t *testing.T) {
 					w := world.World{}
+					tags := []string{}
+					for _, t := range p.Tags {
+						tags = append(tags, t.Name)
+					}
+					var err error
+					defer func() {
+						r := recover()
+						if r != nil {
+							ne, isErr := r.(error)
+							if !isErr {
+								ne = fmt.Errorf("PANIC: %v", r)
+							}
+							err = ne
+						}
+
+						steps.ExecuteAfterScenarios(w, doc.Feature.Name, p.Name, tags, err)
+
+						require.NoError(t, err)
+
+					}()
+					err = steps.ExecuteBeforeScenarios(w, doc.Feature.Name, p.Name, tags)
+					require.NoError(t, err)
 					for _, s := range p.Steps {
-						err = steps.Execute(s.Text, w)
+						err = steps.ExecuteStep(s.Text, w)
 						require.NoError(t, err)
 					}
 				})
