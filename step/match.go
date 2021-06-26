@@ -9,7 +9,12 @@ import (
 
 var paramPattern = regexp.MustCompile(`{((?:int)|(?:string))}`)
 
-func Match(pattern, txt string) ([]interface{}, error) {
+type stepMatcher struct {
+	re    *regexp.Regexp
+	types []string
+}
+
+func newStepMatcher(pattern string) (*stepMatcher, error) {
 	all := paramPattern.FindAllStringIndex(pattern, -1)
 
 	sb := new(strings.Builder)
@@ -55,19 +60,26 @@ func Match(pattern, txt string) ([]interface{}, error) {
 		return nil, fmt.Errorf("while parsing regexp: %s", err.Error())
 	}
 
-	sm := mat.FindStringSubmatch(txt)
+	return &stepMatcher{
+		re:    mat,
+		types: types,
+	}, nil
+}
+
+func (m stepMatcher) match(txt string) ([]interface{}, error) {
+	sm := m.re.FindStringSubmatch(txt)
 	if sm == nil {
 		return nil, errNotMatching
 	}
 
-	if len(sm)-1 != len(types) {
-		return nil, fmt.Errorf("something went wrong matching types (%d) and groups (%d)", len(types), len(sm)-1)
+	if len(sm)-1 != len(m.types) {
+		return nil, fmt.Errorf("something went wrong matching types (%d) and groups (%d)", len(m.types), len(sm)-1)
 	}
 
-	params := make([]interface{}, len(types))
+	params := make([]interface{}, len(m.types))
 
 	for i, st := range sm[1:] {
-		t := types[i]
+		t := m.types[i]
 		switch t {
 		case "int":
 			v, err := strconv.ParseInt(st, 10, 64)
@@ -83,4 +95,13 @@ func Match(pattern, txt string) ([]interface{}, error) {
 	}
 
 	return params, nil
+
+}
+
+func Match(pattern, txt string) ([]interface{}, error) {
+	matcher, err := newStepMatcher(pattern)
+	if err != nil {
+		return nil, err
+	}
+	return matcher.match(txt)
 }
