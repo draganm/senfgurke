@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
+	"strings"
+	"unicode"
 
 	"github.com/draganm/senfgurke/world"
 )
@@ -134,6 +137,81 @@ func (r *Registry) ExecuteStep(text string, w world.World) error {
 	}
 
 	return fmt.Errorf("no step found matching %q", text)
+}
+
+// var stringOrIntMatcher = regexp.MustCompile(`((?:-?\d+)|"((?:[^"]|(?:\\"))*))"`)
+
+var stringOrIntMatcher = regexp.MustCompile(`(-?\d+)|("([^"]|\\")*")`)
+
+func (r *Registry) CheckExisting(text string) error {
+
+	for _, s := range r.steps {
+		_, err := s.matcher.match(text)
+		if err == errNotMatching {
+			continue
+		}
+
+		if err == nil {
+			return nil
+		}
+
+		return err
+	}
+
+	argIndexes := stringOrIntMatcher.FindAllStringIndex(text, -1)
+
+	pattern := new(strings.Builder)
+	args := new(strings.Builder)
+	args.WriteString("w world.World")
+
+	prev := 0
+
+	for i, ai := range argIndexes {
+
+		pattern.WriteString(text[prev:ai[0]])
+
+		if ai[0] > 0 {
+			prevChar := text[ai[0]-1]
+			if unicode.IsLetter(rune(prevChar)) || unicode.IsDigit(rune(prevChar)) {
+				pattern.WriteString(text[ai[0]:ai[1]])
+				prev = ai[1]
+				continue
+			}
+		}
+
+		if len(text) > ai[1] {
+			nextChar := text[ai[1]]
+			if unicode.IsLetter(rune(nextChar)) || unicode.IsDigit(rune(nextChar)) {
+				pattern.WriteString(text[ai[0]:ai[1]])
+				prev = ai[1]
+				continue
+			}
+		}
+
+		args.WriteString(", ")
+		if text[ai[0]] == '"' {
+			pattern.WriteString("{string}")
+			args.WriteString(fmt.Sprintf("arg%d string", i))
+		} else {
+			pattern.WriteString("{int}")
+			args.WriteString(fmt.Sprintf("arg%d int", i))
+		}
+		prev = ai[1]
+	}
+
+	pattern.WriteString(text[prev:])
+
+	return errors.New(fmt.Sprintf(
+		`// could not find step matching %q.
+// to implement it, add following code:
+var _ = steps.Then(%q, func(%s) error {	
+	return errors.New("not yet implemented")
+})
+`,
+		text,
+		pattern.String(),
+		args.String(),
+	))
 }
 
 var errNotMatching = errors.New("not matching")

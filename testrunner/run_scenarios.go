@@ -1,6 +1,7 @@
 package testrunner
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -32,6 +33,24 @@ func RunScenarios(t *testing.T, steps *step.Registry) {
 		features = append(features, e.Name())
 	}
 
+	// check for missing steps
+	for _, f := range features {
+		doc, err := parseGherkin(f)
+		require.NoError(t, err)
+		for _, p := range doc.Pickles() {
+			missingSteps := []string{}
+			for _, s := range p.Steps {
+				err = steps.CheckExisting(s.Text)
+				if err != nil {
+					missingSteps = append(missingSteps, err.Error())
+				}
+			}
+			if len(missingSteps) != 0 {
+				require.NoError(t, errors.New(strings.Join(missingSteps, "\n")))
+			}
+		}
+	}
+
 	for _, f := range features {
 		f := f
 		doc, err := parseGherkin(f)
@@ -58,9 +77,6 @@ func RunScenarios(t *testing.T, steps *step.Registry) {
 						}
 
 						steps.ExecuteAfterScenarios(w, doc.Feature.Name, p.Name, tags, err)
-
-						require.NoError(t, err)
-
 					}()
 					err = steps.ExecuteBeforeScenarios(w, doc.Feature.Name, p.Name, tags)
 					require.NoError(t, err)
