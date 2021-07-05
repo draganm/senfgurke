@@ -78,6 +78,8 @@ func RunScenarios(t *testing.T, steps *step.Registry) {
 							err = ne
 						}
 
+						require.NoError(t, err)
+
 						steps.ExecuteAfterScenarios(w, doc.Feature.Name, p.Name, tags, err)
 					}()
 					err = steps.ExecuteBeforeScenarios(w, doc.Feature.Name, p.Name, tags)
