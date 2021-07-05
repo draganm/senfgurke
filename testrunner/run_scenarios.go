@@ -60,7 +60,9 @@ func RunScenarios(t *testing.T, steps *step.Registry) {
 			for _, p := range doc.Pickles() {
 				p := p
 				t.Run(fmt.Sprintf("Scenario: %s", p.Name), func(t *testing.T) {
-					w := world.World{}
+					w := world.World{
+						requireWorldKey: require.New(t),
+					}
 					tags := []string{}
 					for _, t := range p.Tags {
 						tags = append(tags, t.Name)
