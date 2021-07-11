@@ -51,15 +51,58 @@ func RunScenarios(t *testing.T, steps *step.Registry) {
 		}
 	}
 
+	runWIP := false
+
+	// check for WIP tag
+outer:
+	for _, f := range features {
+		doc, err := parseGherkin(f)
+		require.NoError(t, err)
+
+		for _, ft := range doc.Feature.Tags {
+			if ft.Name == "@WIP" {
+				runWIP = true
+				break outer
+			}
+		}
+
+		for _, p := range doc.Pickles() {
+			for _, st := range p.Tags {
+				if st.Name == "@WIP" {
+					runWIP = true
+					break outer
+				}
+			}
+		}
+	}
+
 	for _, f := range features {
 		f := f
 		doc, err := parseGherkin(f)
 		require.NoError(t, err)
 
+		gotWIP := false
+
+		for _, ft := range doc.Feature.Tags {
+			if ft.Name == "@WIP" {
+				gotWIP = true
+			}
+		}
+
 		t.Run(fmt.Sprintf("%s(%s)", f, doc.Feature.Name), func(t *testing.T) {
 			for _, p := range doc.Pickles() {
 				p := p
+
+				for _, pt := range p.Tags {
+					if pt.Name == "@WIP" {
+						gotWIP = true
+					}
+				}
+
 				t.Run(fmt.Sprintf("Scenario: %s", p.Name), func(t *testing.T) {
+					if runWIP && !gotWIP {
+						t.Skip("not marked as @WIP")
+					}
 					w := world.World{
 						requireWorldKey: require.New(t),
 					}
@@ -92,6 +135,10 @@ func RunScenarios(t *testing.T, steps *step.Registry) {
 			}
 
 		})
+	}
+
+	if runWIP {
+		t.Error("was running features/scenarios wit @WIP tags")
 	}
 
 }
