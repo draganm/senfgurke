@@ -14,7 +14,6 @@ import (
 )
 
 func RunScenarios(t *testing.T, steps *step.Registry) {
-	t.Parallel()
 	entries, err := os.ReadDir(".")
 	require.NoError(t, err)
 
@@ -91,7 +90,9 @@ outer:
 		}
 
 		t.Run(fmt.Sprintf("%s(%s)", f, doc.Feature.Name), func(t *testing.T) {
-			t.Parallel()
+			if !runWIP {
+				t.Parallel()
+			}
 			for _, p := range doc.Pickles() {
 				p := p
 
@@ -102,7 +103,9 @@ outer:
 				}
 
 				t.Run(fmt.Sprintf("Scenario: %s", p.Name), func(t *testing.T) {
-					t.Parallel()
+					if !runWIP {
+						t.Parallel()
+					}
 					if runWIP && !gotWIP {
 						t.Skip("not marked as @WIP")
 					}
@@ -155,5 +158,4 @@ func parseGherkin(name string) (gherkinDocument *gherkin.GherkinDocument, err er
 	defer f.Close()
 
 	return gherkin.ParseGherkinDocument(f)
-
 }
