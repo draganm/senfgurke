@@ -1,11 +1,31 @@
 package world
 
-import "fmt"
+import (
+	"fmt"
+	"testing"
 
-type World map[string]interface{}
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+type World struct {
+	Attributes map[string]interface{}
+	T          *testing.T
+	Require    *require.Assertions
+	Assert     *assert.Assertions
+}
+
+func New(t *testing.T) *World {
+	return &World{
+		Attributes: map[string]interface{}{},
+		T:          t,
+		Require:    require.New(t),
+		Assert:     assert.New(t),
+	}
+}
 
 func (w World) GetInt(name string) int {
-	v, found := w[name]
+	v, found := w.Attributes[name]
 	if !found {
 		panic(fmt.Errorf("could not find value of %q in the world", name))
 	}
@@ -19,7 +39,7 @@ func (w World) GetInt(name string) int {
 }
 
 func (w World) GetString(name string) string {
-	v, found := w[name]
+	v, found := w.Attributes[name]
 	if !found {
 		panic(fmt.Errorf("could not find value of %q in the world", name))
 	}
@@ -33,5 +53,5 @@ func (w World) GetString(name string) string {
 }
 
 func (w World) Put(name string, value interface{}) {
-	w[name] = value
+	w.Attributes[name] = value
 }

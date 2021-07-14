@@ -17,8 +17,8 @@ type step struct {
 }
 
 type Registry struct {
-	beforeScenarios []func(w world.World, featureName, scenarioName string, tags []string) error
-	afterScenarios  []func(w world.World, featureName, scenarioName string, tags []string, err error) error
+	beforeScenarios []func(w *world.World, featureName, scenarioName string, tags []string) error
+	afterScenarios  []func(w *world.World, featureName, scenarioName string, tags []string, err error) error
 	steps           []step
 }
 
@@ -28,17 +28,17 @@ func NewRegistry() *Registry {
 
 var errorInterface = reflect.TypeOf((*error)(nil)).Elem()
 
-func (r *Registry) BeforeScenario(fn func(w world.World, featureName, scenarioName string, tags []string) error) error {
+func (r *Registry) BeforeScenario(fn func(w *world.World, featureName, scenarioName string, tags []string) error) error {
 	r.beforeScenarios = append(r.beforeScenarios, fn)
 	return nil
 }
 
-func (r *Registry) AfterScenario(fn func(w world.World, featureName, scenarioName string, tags []string, err error) error) error {
+func (r *Registry) AfterScenario(fn func(w *world.World, featureName, scenarioName string, tags []string, err error) error) error {
 	r.afterScenarios = append(r.afterScenarios, fn)
 	return nil
 }
 
-func (r *Registry) ExecuteBeforeScenarios(w world.World, featureName, scenarioName string, tags []string) error {
+func (r *Registry) ExecuteBeforeScenarios(w *world.World, featureName, scenarioName string, tags []string) error {
 	for _, bs := range r.beforeScenarios {
 		err := bs(w, featureName, scenarioName, tags)
 		if err != nil {
@@ -48,7 +48,7 @@ func (r *Registry) ExecuteBeforeScenarios(w world.World, featureName, scenarioNa
 	return nil
 }
 
-func (r *Registry) ExecuteAfterScenarios(w world.World, featureName, scenarioName string, tags []string, err error) error {
+func (r *Registry) ExecuteAfterScenarios(w *world.World, featureName, scenarioName string, tags []string, err error) error {
 	for _, bs := range r.afterScenarios {
 		err := bs(w, featureName, scenarioName, tags, err)
 		if err != nil {
@@ -76,7 +76,7 @@ func (r *Registry) addStep(pattern string, impl interface{}) error {
 		)
 	}
 
-	if !t.In(0).AssignableTo(reflect.TypeOf(world.World{})) {
+	if !t.In(0).AssignableTo(reflect.TypeOf(&world.World{})) {
 		return errors.New("first parameter of step implementation must be world.World")
 	}
 
@@ -121,7 +121,7 @@ func (r *Registry) Then(pattern string, impl interface{}) error {
 	return r.addStep(pattern, impl)
 }
 
-func (r *Registry) ExecuteStep(text string, w world.World) error {
+func (r *Registry) ExecuteStep(text string, w *world.World) error {
 
 	for _, s := range r.steps {
 		err := s.execute(text, w)
@@ -162,7 +162,7 @@ func (r *Registry) CheckExisting(text string) error {
 
 	pattern := new(strings.Builder)
 	args := new(strings.Builder)
-	args.WriteString("w world.World")
+	args.WriteString("w *world.World")
 
 	prev := 0
 
@@ -216,7 +216,7 @@ var _ = steps.Then(%q, func(%s) error {
 
 var errNotMatching = errors.New("not matching")
 
-func (s step) execute(text string, w world.World) error {
+func (s step) execute(text string, w *world.World) error {
 
 	params, err := s.matcher.match(text)
 	if err != nil {

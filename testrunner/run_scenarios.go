@@ -109,9 +109,7 @@ outer:
 					if runWIP && !gotWIP {
 						t.Skip("not marked as @WIP")
 					}
-					w := world.World{
-						requireWorldKey: require.New(t),
-					}
+					w := world.New(t)
 					tags := []string{}
 					for _, t := range p.Tags {
 						tags = append(tags, t.Name)
