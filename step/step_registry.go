@@ -96,11 +96,11 @@ func (r *Registry) addStep(pattern string, impl interface{}) error {
 		}
 	}
 
-	if t.NumOut() != 1 {
-		return fmt.Errorf("expected step implementation to return one value, but it returns %d", t.NumOut())
+	if t.NumOut() > 1 {
+		return fmt.Errorf("expected step implementation to return at most one value, but it returns %d", t.NumOut())
 	}
 
-	if !t.Out(0).AssignableTo(errorInterface) {
+	if t.NumOut() == 1 && !t.Out(0).AssignableTo(errorInterface) {
 		return errors.New("step implementation must return error type")
 	}
 
@@ -204,8 +204,8 @@ func (r *Registry) CheckExisting(text string) error {
 	return errors.New(fmt.Sprintf(
 		`// could not find step matching %q.
 // to implement it, add following code:
-var _ = steps.Then(%q, func(%s) error {	
-	return errors.New("not yet implemented")
+var _ = steps.Then(%q, func(%s) {	
+	w.Require.Fail("not yet implemented")
 })
 `,
 		text,
@@ -230,6 +230,11 @@ func (s step) execute(text string, w *world.World) error {
 		values[i+1] = reflect.ValueOf(p)
 	}
 	res := iv.Call(values)
+
+	if len(res) == 0 {
+		return nil
+	}
+
 	ri := res[0].Interface()
 	if ri == nil {
 		return nil

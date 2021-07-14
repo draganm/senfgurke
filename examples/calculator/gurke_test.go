@@ -15,26 +15,22 @@ func TestFeatures(t *testing.T) {
 
 var steps = step.NewRegistry()
 
-var _ = steps.When("I add {int} and {int}", func(w *world.World, a, b int) error {
+var _ = steps.When("I add {int} and {int}", func(w *world.World, a, b int) {
 	w.Put("result", a+b)
-	return nil
 })
 
-var _ = steps.Then("the result should be {int}", func(w *world.World, expected int) error {
+var _ = steps.Then("the result should be {int}", func(w *world.World, expected int) {
 	result := w.GetInt("result")
 	w.Require.Equal(expected, result)
-	return nil
 })
 
-var _ = steps.When("I convert number {int} to string", func(w *world.World, a int) error {
+var _ = steps.When("I convert number {int} to string", func(w *world.World, a int) {
 	w.Put("result", fmt.Sprintf("%d", a))
-	return nil
 })
 
-var _ = steps.Then("the string should be {string}", func(w *world.World, expected string) error {
+var _ = steps.Then("the string should be {string}", func(w *world.World, expected string) {
 	result := w.GetString("result")
 	w.Require.Equal(expected, result)
-	return nil
 })
 
 var _ = steps.BeforeScenario(func(w *world.World, featureName, scenarioName string, tags []string) error {
