@@ -130,7 +130,7 @@ func (r *Registry) ExecuteStep(text string, w *world.World) error {
 		}
 
 		if err != nil {
-			return fmt.Errorf("while executing step %q: %s", text, err.Error())
+			return fmt.Errorf("while executing step %q: %w", text, err)
 		}
 
 		return nil

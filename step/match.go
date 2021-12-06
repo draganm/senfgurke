@@ -57,7 +57,7 @@ func newStepMatcher(pattern string) (*stepMatcher, error) {
 	mat, err := regexp.Compile(matchRegexp)
 
 	if err != nil {
-		return nil, fmt.Errorf("while parsing regexp: %s", err.Error())
+		return nil, fmt.Errorf("while parsing regexp: %w", err)
 	}
 
 	return &stepMatcher{
@@ -84,7 +84,7 @@ func (m stepMatcher) match(txt string) ([]interface{}, error) {
 		case "int":
 			v, err := strconv.ParseInt(st, 10, 64)
 			if err != nil {
-				return nil, fmt.Errorf("while parsing int %q: %s", st, err.Error())
+				return nil, fmt.Errorf("while parsing int %q: %w", st, err)
 			}
 			params[i] = int(v)
 		case "string":
