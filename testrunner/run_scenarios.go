@@ -7,7 +7,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cucumber/gherkin-go"
+	// "github.com/cucumber/gherkin-go"
+	gherkin "github.com/cucumber/common/gherkin/go/v22"
+	messages "github.com/cucumber/common/messages/go/v17"
+	"github.com/gofrs/uuid"
+
+	// "github.com/cucumber/gherkin-go"
 	"github.com/draganm/senfgurke/step"
 	"github.com/draganm/senfgurke/world"
 	"github.com/stretchr/testify/require"
@@ -37,9 +42,13 @@ func RunScenarios(t *testing.T, steps *step.Registry) {
 	for _, f := range features {
 		doc, err := parseGherkin(f)
 		require.NoError(t, err)
-		for _, p := range doc.Pickles() {
+		for _, fc := range doc.Feature.Children {
+			if fc.Scenario == nil {
+				continue
+			}
+
 			missingSteps := []string{}
-			for _, s := range p.Steps {
+			for _, s := range fc.Scenario.Steps {
 				err = steps.CheckExisting(s.Text)
 				if err != nil {
 					missingSteps = append(missingSteps, err.Error())
@@ -66,8 +75,12 @@ outer:
 			}
 		}
 
-		for _, p := range doc.Pickles() {
-			for _, st := range p.Tags {
+		for _, fc := range doc.Feature.Children {
+			if fc.Scenario == nil {
+				continue
+			}
+
+			for _, st := range fc.Scenario.Tags {
 				if st.Name == "@WIP" {
 					runWIP = true
 					break outer
@@ -93,16 +106,21 @@ outer:
 			if !runWIP {
 				t.Parallel()
 			}
-			for _, p := range doc.Pickles() {
-				p := p
+			for _, fc := range doc.Feature.Children {
 
-				for _, pt := range p.Tags {
+				if fc.Scenario == nil {
+					continue
+				}
+
+				fc := fc
+
+				for _, pt := range fc.Scenario.Tags {
 					if pt.Name == "@WIP" {
 						gotWIP = true
 					}
 				}
 
-				t.Run(fmt.Sprintf("Scenario: %s", p.Name), func(t *testing.T) {
+				t.Run(fmt.Sprintf("Scenario: %s", fc.Scenario.Name), func(t *testing.T) {
 					if !runWIP {
 						t.Parallel()
 					}
@@ -111,7 +129,7 @@ outer:
 					}
 					w := world.New(t)
 					tags := []string{}
-					for _, t := range p.Tags {
+					for _, t := range fc.Scenario.Tags {
 						tags = append(tags, t.Name)
 					}
 					var err error
@@ -127,11 +145,11 @@ outer:
 
 						require.NoError(t, err)
 
-						steps.ExecuteAfterScenarios(w, doc.Feature.Name, p.Name, tags, err)
+						steps.ExecuteAfterScenarios(w, doc.Feature.Name, fc.Scenario.Name, tags, err)
 					}()
-					err = steps.ExecuteBeforeScenarios(w, doc.Feature.Name, p.Name, tags)
+					err = steps.ExecuteBeforeScenarios(w, doc.Feature.Name, fc.Scenario.Name, tags)
 					require.NoError(t, err)
-					for _, s := range p.Steps {
+					for _, s := range fc.Scenario.Steps {
 						err = steps.ExecuteStep(s.Text, w)
 						require.NoError(t, err)
 					}
@@ -147,7 +165,8 @@ outer:
 
 }
 
-func parseGherkin(name string) (gherkinDocument *gherkin.GherkinDocument, err error) {
+func parseGherkin(name string) (gherkinDocument *messages.GherkinDocument, err error) {
+	// gherkin.GherkinDocument
 	f, err := os.Open(name)
 	if err != nil {
 		return nil, err
@@ -155,5 +174,5 @@ func parseGherkin(name string) (gherkinDocument *gherkin.GherkinDocument, err er
 
 	defer f.Close()
 
-	return gherkin.ParseGherkinDocument(f)
+	return gherkin.ParseGherkinDocument(f, func() string { return uuid.Must(uuid.NewV4()).String() })
 }
