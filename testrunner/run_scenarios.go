@@ -15,6 +15,7 @@ import (
 	// "github.com/cucumber/gherkin-go"
 	"github.com/draganm/senfgurke/step"
 	"github.com/draganm/senfgurke/world"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,7 +23,7 @@ func RunScenarios(t *testing.T, steps *step.Registry) {
 	entries, err := os.ReadDir(".")
 	require.NoError(t, err)
 
-	features := []string{}
+	featureFiles := []string{}
 	for _, e := range entries {
 
 		if !strings.HasSuffix(e.Name(), ".feature") {
@@ -35,36 +36,45 @@ func RunScenarios(t *testing.T, steps *step.Registry) {
 			continue
 		}
 
-		features = append(features, e.Name())
+		featureFiles = append(featureFiles, e.Name())
 	}
 
 	// check for missing steps
-	for _, f := range features {
+	for _, f := range featureFiles {
 		doc, err := parseGherkin(f)
 		require.NoError(t, err)
+		missingSteps := []string{}
 		for _, fc := range doc.Feature.Children {
-			if fc.Scenario == nil {
-				continue
-			}
 
-			missingSteps := []string{}
-			for _, s := range fc.Scenario.Steps {
-				err = steps.CheckExisting(s.Text)
-				if err != nil {
-					missingSteps = append(missingSteps, err.Error())
+			switch {
+			case fc.Scenario != nil:
+				for _, s := range fc.Scenario.Steps {
+					err = steps.CheckExisting(s.Text)
+					if err != nil {
+						missingSteps = append(missingSteps, err.Error())
+					}
+				}
+			case fc.Background != nil:
+				for _, s := range fc.Background.Steps {
+					err = steps.CheckExisting(s.Text)
+					if err != nil {
+						missingSteps = append(missingSteps, err.Error())
+					}
 				}
 			}
+
 			if len(missingSteps) != 0 {
 				require.NoError(t, errors.New(strings.Join(missingSteps, "\n")))
 			}
 		}
+
 	}
 
 	runWIP := false
 
 	// check for WIP tag
 outer:
-	for _, f := range features {
+	for _, f := range featureFiles {
 		doc, err := parseGherkin(f)
 		require.NoError(t, err)
 
@@ -89,7 +99,7 @@ outer:
 		}
 	}
 
-	for _, f := range features {
+	for _, f := range featureFiles {
 		f := f
 		doc, err := parseGherkin(f)
 		require.NoError(t, err)
@@ -106,6 +116,14 @@ outer:
 			if !runWIP {
 				t.Parallel()
 			}
+
+			backgroundSteps := []*messages.Step{}
+			for _, fc := range doc.Feature.Children {
+				if fc.Background != nil {
+					backgroundSteps = append(backgroundSteps, fc.Background.Steps...)
+				}
+			}
+
 			for _, fc := range doc.Feature.Children {
 
 				if fc.Scenario == nil {
@@ -127,7 +145,7 @@ outer:
 					if runWIP && !gotWIP {
 						t.Skip("not marked as @WIP")
 					}
-					w := world.New(t)
+					w, cleanup := world.New(t)
 					tags := []string{}
 					for _, t := range fc.Scenario.Tags {
 						tags = append(tags, t.Name)
@@ -143,13 +161,20 @@ outer:
 							err = ne
 						}
 
-						require.NoError(t, err)
+						assert.NoError(t, err)
 
-						steps.ExecuteAfterScenarios(w, doc.Feature.Name, fc.Scenario.Name, tags, err)
+						err = cleanup()
+						assert.NoError(t, err)
+
+						err = steps.ExecuteAfterScenarios(w, doc.Feature.Name, fc.Scenario.Name, tags, err)
+						assert.NoError(t, err)
 					}()
 					err = steps.ExecuteBeforeScenarios(w, doc.Feature.Name, fc.Scenario.Name, tags)
 					require.NoError(t, err)
-					for _, s := range fc.Scenario.Steps {
+					allSteps := append([]*messages.Step{}, backgroundSteps...)
+
+					allSteps = append(allSteps, fc.Scenario.Steps...)
+					for _, s := range allSteps {
 						err = steps.ExecuteStep(s.Text, w)
 						require.NoError(t, err)
 					}

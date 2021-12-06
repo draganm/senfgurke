@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/multierr"
 )
 
 type World struct {
@@ -13,14 +14,25 @@ type World struct {
 	T          *testing.T
 	Require    *require.Assertions
 	Assert     *assert.Assertions
+	cleanups   [](func() error)
 }
 
-func New(t *testing.T) *World {
-	return &World{
+func New(t *testing.T) (*World, func() error) {
+	w := &World{
 		Attributes: map[string]interface{}{},
 		T:          t,
 		Require:    require.New(t),
 		Assert:     assert.New(t),
+	}
+	return w, func() error {
+		var finalErr error
+		for _, cleanup := range w.cleanups {
+			err := cleanup()
+			if err != nil {
+				finalErr = multierr.Append(finalErr, err)
+			}
+		}
+		return finalErr
 	}
 }
 
@@ -54,4 +66,8 @@ func (w World) GetString(name string) string {
 
 func (w World) Put(name string, value interface{}) {
 	w.Attributes[name] = value
+}
+
+func (w *World) AddCleanup(f func() error) {
+	w.cleanups = append(w.cleanups, f)
 }
