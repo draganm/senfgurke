@@ -113,9 +113,6 @@ outer:
 		}
 
 		t.Run(fmt.Sprintf("%s(%s)", f, doc.Feature.Name), func(t *testing.T) {
-			if !runWIP {
-				t.Parallel()
-			}
 
 			backgroundSteps := []*messages.Step{}
 			for _, fc := range doc.Feature.Children {
@@ -139,9 +136,6 @@ outer:
 				}
 
 				t.Run(fmt.Sprintf("Scenario: %s", fc.Scenario.Name), func(t *testing.T) {
-					if !runWIP {
-						t.Parallel()
-					}
 					if runWIP && !gotWIP {
 						t.Skip("not marked as @WIP")
 					}
